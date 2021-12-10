@@ -2,10 +2,13 @@ use std::fs;
 use std::path::Path;
 use std::process::Command;
 
-use super::{ Error, Token };
+use super::{ Error, Token, TokenPos };
 
-pub fn compile(tokens: &Vec<Token>, input_filename: &str, run_on_success: bool) -> Result<(), Error> {
+pub fn compile(tokens: &Vec<(Token, TokenPos)>, input_filename: &str, run_on_success: bool) -> Result<(), Error> {
     let mut instructions: Vec<String> = Vec::new();
+    
+    let mut block_num: usize = 0;
+    let mut block_addrs: Vec<usize> = Vec::new();
 
     instructions.push("segment .text".into());
 
@@ -46,7 +49,7 @@ pub fn compile(tokens: &Vec<Token>, input_filename: &str, run_on_success: bool) 
 
     instructions.push("global _start".into());
     instructions.push("_start:".into());
-    for token in tokens {
+    for (token, _) in tokens {
         instructions.push(token.to_asm_comment());
 
         match token {
@@ -105,6 +108,23 @@ pub fn compile(tokens: &Vec<Token>, input_filename: &str, run_on_success: bool) 
                 instructions.push("    push   rax".into());
                 instructions.push("    push   rcx".into());
             },
+            Token::If(_) => {
+                instructions.push("    pop    rax".into());
+                instructions.push("    cmp    rax, 0".into());
+                instructions.push(format!("    je     addr_{}", block_num));
+                block_addrs.push(block_num);
+                block_num += 1;
+            },
+            Token::Else(_) => {
+                let block_addr = block_addrs.pop().unwrap();
+                instructions.push(format!("    jmp    addr_{}", block_num));
+                block_addrs.push(block_num);
+                block_num += 1;
+                instructions.push(format!("addr_{}", block_addr));
+            },
+            Token::End(_) => {
+                instructions.push(format!("addr_{}", block_addrs.pop().unwrap()));
+            },
         }
     }
 
@@ -118,7 +138,7 @@ pub fn compile(tokens: &Vec<Token>, input_filename: &str, run_on_success: bool) 
     let output_base = Path::new(input_filename);
 
     fs::write(output_base.with_extension("asm"), &file_contents).map_err(
-        |err| Error::FileLoadError(err.to_string())
+        |err| Error { msg: err.to_string(), pos: TokenPos::default() }
     ).expect("Failed to write to file.");
 
     Command::new("nasm")

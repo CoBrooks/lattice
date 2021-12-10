@@ -1,11 +1,14 @@
-use super::{ Error, Token };
+use super::{ Error, Token, TokenPos };
 
-pub fn simulate(tokens: &Vec<Token>) -> Result<(), Error> {
+pub fn simulate(tokens: &Vec<(Token, TokenPos)>) -> Result<(), Error> {
     // let mem_addr: (usize, usize) = (0, 0);
     // let mem: HashMap<(usize, usize), u8> = HashMap::new();
-    let mut stack: Vec<u8> = Vec::new();
+    let mut stack: Vec<usize> = Vec::new();
+    let mut ip: usize = 0;
 
-    for token in tokens {
+    while ip < tokens.len() {
+        let (token, _) = &tokens[ip];
+
         match token {
             Token::Num(num) => {
                 stack.push(num.clone());
@@ -55,7 +58,21 @@ pub fn simulate(tokens: &Vec<Token>) -> Result<(), Error> {
                 stack.push(a);
                 stack.push(b);
             },
+            Token::If(next_ip) => {
+                let a = stack.pop().expect("No element on stack for if block.");
+                if a == 0 {
+                    ip = *next_ip;
+                }
+            },
+            Token::Else(end_ip) => { 
+                ip = *end_ip;
+            },
+            Token::End(next_ip) => {
+                ip = *next_ip;
+            },
         }
+
+        ip += 1;
     }
 
     Ok(())
