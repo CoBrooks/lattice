@@ -27,6 +27,8 @@ and thus can only be run on Linux (for now).
 
 ### Operators
 
+All examples print `4` to `stdout`.
+
 - print: prints an unsigned integer
 ```
 4 print
@@ -34,7 +36,7 @@ and thus can only be run on Linux (for now).
 
 - add, subtract, multiply, and divide
 ```
-2  2 + print
+2  2 + print 
 8  4 - print
 2  2 * print
 16 4 / print
@@ -45,13 +47,28 @@ and thus can only be run on Linux (for now).
 2 dup + print
 ```
 
+- drop: drops the top element of the stack
+```
+4 100 drop print
+```
+
+- swap: swaps the top two elements of the stack
+```
+100 4 swap print
+```
+
+- over: duplicates the second element on the stack and pushes it
+```
+4 100 over print
+```
+
 ## TODO:
 
+- [ ] Conditions and Loops
 - [ ] Implement memory structure
     - [ ] 2d grid
     - [ ] Traversal of the grid (steps and jumps)
     - [ ] Storing values within the grid
     - [ ] Some form of pointers
-- [ ] Conditions and Loops
 - [ ] Directional arrays (C-style arrays; pointer to the start + a direction, ends with a null byte)
 

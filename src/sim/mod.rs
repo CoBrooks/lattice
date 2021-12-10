@@ -39,6 +39,22 @@ pub fn simulate(tokens: &Vec<Token>) -> Result<(), Error> {
                 stack.push(a);
                 stack.push(a);
             },
+            Token::Drop => {
+                let _ = stack.pop().expect("No element to drop.");
+            },
+            Token::Swap => {
+                let a = stack.pop().expect("Not enough elements to swap.");
+                let b = stack.pop().expect("Not enough elements to swap.");
+                stack.push(a);
+                stack.push(b);
+            },
+            Token::Over => {
+                let a = stack.pop().expect("Not enough elements to duplicate over.");
+                let b = stack.pop().expect("Not enough elements to duplicate over.");
+                stack.push(b);
+                stack.push(a);
+                stack.push(b);
+            },
         }
     }
 

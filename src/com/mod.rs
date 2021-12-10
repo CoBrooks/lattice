@@ -89,6 +89,22 @@ pub fn compile(tokens: &Vec<Token>, input_filename: &str, run_on_success: bool) 
                 instructions.push("    push   rax".into());
                 instructions.push("    push   rax".into());
             },
+            Token::Drop => {
+                instructions.push("    pop    rax".into());
+            },
+            Token::Swap => {
+                instructions.push("    pop    rax".into());
+                instructions.push("    pop    rcx".into());
+                instructions.push("    push   rax".into());
+                instructions.push("    push   rcx".into());
+            },
+            Token::Over => {
+                instructions.push("    pop    rax".into());
+                instructions.push("    pop    rcx".into());
+                instructions.push("    push   rcx".into());
+                instructions.push("    push   rax".into());
+                instructions.push("    push   rcx".into());
+            },
         }
     }
 

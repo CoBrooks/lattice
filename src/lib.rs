@@ -45,6 +45,9 @@ pub enum Token {
     OpDiv,
     Print,
     Dup,
+    Drop,
+    Swap,
+    Over
 }
 
 impl Token {
@@ -57,6 +60,9 @@ impl Token {
             Token::OpDiv => "; -- div --",
             Token::Print => "; -- print --",
             Token::Dup => "; -- dup --",
+            Token::Drop => "; -- drop --",
+            Token::Swap => "; -- swap --",
+            Token::Over => "; -- over --",
         }.into()
     }
 }
@@ -84,6 +90,9 @@ pub fn lex_lines(lines: Vec<String>) -> Result<Vec<Token>, Error> {
                 "/" => tokens.push(Token::OpDiv),
                 "print" => tokens.push(Token::Print),
                 "dup" => tokens.push(Token::Dup),
+                "drop" => tokens.push(Token::Drop),
+                "swap" => tokens.push(Token::Swap),
+                "over" => tokens.push(Token::Over),
                 _ => panic!("Unimplemented token {}", t)
             }
         }

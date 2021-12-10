@@ -1,4 +1,9 @@
 20 20 + print
-15 2 * 10 + print
-70 30 - print
-80 1 -  2 / print
+75 35 - print
+8  5  * print
+80 2  / print
+
+20 dup + print
+20 dup drop 2 * print
+30 70 swap - print
+2 80 over / print drop
