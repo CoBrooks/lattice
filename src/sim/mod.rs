@@ -70,6 +70,24 @@ pub fn simulate(tokens: &Vec<(Token, TokenPos)>) -> Result<(), Error> {
             Token::End(next_ip) => {
                 ip = *next_ip;
             },
+            Token::Eq => {
+                todo!()
+            },
+            Token::GT => {
+                todo!()
+            },
+            Token::LT => {
+                todo!()
+            },
+            Token::And => {
+                todo!()
+            },
+            Token::Not => {
+                todo!()
+            },
+            Token::Or => {
+                todo!()
+            },
         }
 
         ip += 1;

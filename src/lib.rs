@@ -27,7 +27,11 @@ pub fn load_file(filepath: &str) -> Result<Vec<String>, Error> {
     use std::fs;
 
     if let Ok(file) = fs::read_to_string(filepath) {
-        Ok(file.lines().map(|l| l.to_string()).collect())
+        Ok(file.lines()
+           .map(|l| 
+                l.split("//").find(|_| true).unwrap().to_string()
+            ).collect()
+        )
     } else {
         Err(Error { 
             msg: format!("Unable to open file: {}", filepath), 
@@ -38,19 +42,36 @@ pub fn load_file(filepath: &str) -> Result<Vec<String>, Error> {
 
 #[derive(Debug, Clone, Copy)]
 pub enum Token {
+    // For pushing a number to the stack
     Num(usize),
+
+    // Mathematical operations
     OpAdd,
     OpSub,
     OpMul,
     OpDiv,
+
+    // Stdout interaction
     Print,
+    
+    // Stack operations
     Dup,
     Drop,
     Swap,
     Over,
+
+    // Conditionals and Loops
     If(usize),
     Else(usize),
     End(usize),
+
+    // Conditional operators
+    Eq,
+    GT,
+    LT,
+    And,
+    Not,
+    Or,
 }
 
 impl Token {
@@ -69,6 +90,12 @@ impl Token {
             Token::If(_) => "; -- if --",
             Token::Else(_) => "; -- else --",
             Token::End(_) => "; -- end --",
+            Token::Eq => "; -- eq --",
+            Token::GT => "; -- gt --",
+            Token::LT => "; -- lt --",
+            Token::And => "; -- and --",
+            Token::Not => "; -- not --",
+            Token::Or => "; -- or --",
         }.into()
     }
 }
@@ -165,6 +192,12 @@ pub fn lex_lines(lines: Vec<String>) -> Result<Vec<(Token, TokenPos)>, Error> {
                 "-" => Token::OpSub,
                 "*" => Token::OpMul,
                 "/" => Token::OpDiv,
+                "=" => Token::Eq,
+                ">" => Token::GT,
+                "<" => Token::LT,
+                "and" => Token::And,
+                "not" => Token::Not,
+                "or" => Token::Or,
                 "print" => Token::Print,
                 "dup" => Token::Dup,
                 "drop" => Token::Drop,

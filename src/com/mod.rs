@@ -120,10 +120,54 @@ pub fn compile(tokens: &Vec<(Token, TokenPos)>, input_filename: &str, run_on_suc
                 instructions.push(format!("    jmp    addr_{}", block_num));
                 block_addrs.push(block_num);
                 block_num += 1;
-                instructions.push(format!("addr_{}", block_addr));
+                instructions.push(format!("addr_{}:", block_addr));
             },
             Token::End(_) => {
-                instructions.push(format!("addr_{}", block_addrs.pop().unwrap()));
+                instructions.push(format!("addr_{}:", block_addrs.pop().unwrap()));
+            },
+            Token::Eq | Token::And => {
+                instructions.push("    pop    rcx".into());
+                instructions.push("    pop    rdx".into());
+                instructions.push("    cmp    rdx, rcx".into());
+                instructions.push("    mov    rax, 0".into());
+                instructions.push("    mov    rdx, 1".into());
+                instructions.push("    cmove  rax, rdx".into());
+                instructions.push("    push   rax".into());
+            },
+            Token::GT => {
+                instructions.push("    pop    rcx".into());
+                instructions.push("    pop    rdx".into());
+                instructions.push("    cmp    rdx, rcx".into());
+                instructions.push("    mov    rax, 0".into());
+                instructions.push("    mov    rdx, 1".into());
+                instructions.push("    cmovg  rax, rdx".into());
+                instructions.push("    push   rax".into());
+            },
+            Token::LT => {
+                instructions.push("    pop    rcx".into());
+                instructions.push("    pop    rdx".into());
+                instructions.push("    cmp    rdx, rcx".into());
+                instructions.push("    mov    rax, 0".into());
+                instructions.push("    mov    rdx, 1".into());
+                instructions.push("    cmovl  rax, rdx".into());
+                instructions.push("    push   rax".into());
+            },
+            Token::Not => {
+                instructions.push("    pop    rax".into());
+                instructions.push("    cmp    rax, 0".into());
+                instructions.push("    mov    rcx, 1".into());
+                instructions.push("    cmove  rax, rcx".into());
+                instructions.push("    push   rax".into());
+            },
+            Token::Or => {
+                instructions.push("    pop    rax".into());
+                instructions.push("    pop    rcx".into());
+                instructions.push("    mov    rdx, 1".into());
+                instructions.push("    cmp    rax, 0".into());
+                instructions.push("    cmovne rax, rdx".into());
+                instructions.push("    cmp    rcx, 0".into());
+                instructions.push("    cmovne rax, rdx".into());
+                instructions.push("    push   rax".into());
             },
         }
     }
