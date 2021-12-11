@@ -64,7 +64,7 @@ All examples print `4` to `stdout`.
 
 ## TODO:
 
-- [ ] Conditions and Loops
+- [x] Conditions and Loops
 - [ ] Implement memory structure
     - [ ] 2d grid
     - [ ] Traversal of the grid (steps and jumps)

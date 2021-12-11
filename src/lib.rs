@@ -63,6 +63,8 @@ pub enum Token {
     // Conditionals and Loops
     If(usize),
     Else(usize),
+    While,
+    Do(usize),
     End(usize),
 
     // Conditional operators
@@ -89,6 +91,8 @@ impl Token {
             Token::Over => "; -- over --",
             Token::If(_) => "; -- if --",
             Token::Else(_) => "; -- else --",
+            Token::While => "; -- while --",
+            Token::Do(_) => "; -- do --",
             Token::End(_) => "; -- end --",
             Token::Eq => "; -- eq --",
             Token::GT => "; -- gt --",
@@ -119,7 +123,7 @@ pub fn get_block_end(tokens: &[(Token, TokenPos)], block_start: TokenPos) -> Res
     while ip < tokens.len() {
         let (token, _) = &tokens[ip];
         match token {
-            Token::If(_) => block_depth += 1,
+            Token::If(_) | Token::Do(_) => block_depth += 1,
             Token::End(_) => block_depth -= 1,
             _ => { }
         }
@@ -141,7 +145,7 @@ pub fn get_if_next_ip(tokens: &[(Token, TokenPos)], if_start: TokenPos) -> Resul
     while ip < tokens.len() {
         let (token, _) = &tokens[ip];
         match token {
-            Token::If(_) => block_depth += 1,
+            Token::If(_) | Token::Do(_) => block_depth += 1,
             Token::Else(_) => {
                 if block_depth == 1 {
                     return Ok(ip);
@@ -166,6 +170,7 @@ pub fn lex_lines(lines: Vec<String>) -> Result<Vec<(Token, TokenPos)>, Error> {
     let mut ip: usize = 0;
 
     let mut blocks: Vec<(Token, TokenPos)> = Vec::new();
+    let mut terminated_blocks: Vec<(Token, TokenPos)> = Vec::new();
 
     for (row, line) in lines.iter().enumerate() {
         let ts: Vec<&str> = line.split_ascii_whitespace().collect();
@@ -206,19 +211,34 @@ pub fn lex_lines(lines: Vec<String>) -> Result<Vec<(Token, TokenPos)>, Error> {
                 "if" => { 
                     let t = Token::If(0);
                     blocks.push((t, pos));
+                    terminated_blocks.push((t, pos));
                     t
                 },
                 "else" => {
                     let t = Token::Else(0);
                     blocks.push((t, pos));
+                    terminated_blocks.push((t, pos));
+                    t
+                },
+                "while" => { 
+                    let t = Token::While;
+                    blocks.push((t, pos));
+                    terminated_blocks.push((t, pos));
+                    t
+                },
+                "do" => { 
+                    let t = Token::Do(0);
+                    blocks.push((t, pos));
                     t
                 },
                 "end" => {
-                    let (block_type, block_start) = blocks.last().expect("End must have a corresponding block.");
+                    let (block_type, block_start) = terminated_blocks.pop().unwrap();
                     if let Token::If(_) = block_type {
                         Token::End(ip)
                     } else if let Token::Else(_) = block_type { 
                         Token::End(ip)
+                    } else if let Token::While = block_type { 
+                        Token::End(block_start.ip)
                     } else {
                         Token::End(block_start.ip) 
                     }
@@ -245,10 +265,20 @@ pub fn lex_lines(lines: Vec<String>) -> Result<Vec<(Token, TokenPos)>, Error> {
             let next = get_block_end(tokens.as_slice(), block_start)?;
 
             tokens[block_start.ip] = (Token::Else(next), ip);
+        } else if let (Token::Do(_), ip) = tokens[block_start.ip] {
+            let end_ip = get_block_end(tokens.as_slice(), block_start)?;
+
+            tokens[block_start.ip] = (Token::Do(end_ip), ip);
+        } else if let (Token::While, _) = tokens[block_start.ip] { 
+            
         } else {
             todo!("Implement missing block logic.")
         }
     }
+
+    // for (token, pos) in &tokens {
+    //     println!("{:?}: {}", token, pos.ip);
+    // }
 
     Ok(tokens)
 }

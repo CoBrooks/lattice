@@ -10,6 +10,8 @@ pub fn compile(tokens: &Vec<(Token, TokenPos)>, input_filename: &str, run_on_suc
     let mut block_num: usize = 0;
     let mut block_addrs: Vec<usize> = Vec::new();
 
+    let mut block_is_dowhile: Vec<bool> = Vec::new();
+
     instructions.push("segment .text".into());
 
     // Function for printing (32-bit) numbers
@@ -114,6 +116,7 @@ pub fn compile(tokens: &Vec<(Token, TokenPos)>, input_filename: &str, run_on_suc
                 instructions.push(format!("    je     addr_{}", block_num));
                 block_addrs.push(block_num);
                 block_num += 1;
+                block_is_dowhile.push(false);
             },
             Token::Else(_) => {
                 let block_addr = block_addrs.pop().unwrap();
@@ -122,7 +125,23 @@ pub fn compile(tokens: &Vec<(Token, TokenPos)>, input_filename: &str, run_on_suc
                 block_num += 1;
                 instructions.push(format!("addr_{}:", block_addr));
             },
+            Token::While => {
+                instructions.push(format!("addr_{}:", block_num));
+                block_num += 1;
+                block_addrs.push(block_num);
+                block_addrs.push(block_num - 1);
+                block_num += 1;
+            },
+            Token::Do(_) => {
+                instructions.push("    pop    rax".into());
+                instructions.push("    cmp    rax, 0".into());
+                instructions.push(format!("    je     addr_{}", block_addrs[block_addrs.len() - 2]));
+                block_is_dowhile.push(true);
+            },
             Token::End(_) => {
+                if block_is_dowhile.pop().unwrap() {
+                    instructions.push(format!("    jmp    addr_{}", block_addrs.pop().unwrap()));
+                }
                 instructions.push(format!("addr_{}:", block_addrs.pop().unwrap()));
             },
             Token::Eq | Token::And => {
@@ -173,8 +192,8 @@ pub fn compile(tokens: &Vec<(Token, TokenPos)>, input_filename: &str, run_on_suc
     }
 
     instructions.push("; -- exit --".into());
-    instructions.push("    mov rax, 60".into());
-    instructions.push("    pop rdi".into()); // return code = top element on stack
+    instructions.push("    mov    rax, 60".into());
+    instructions.push("    pop    rdi".into()); // return code = top element on stack
     instructions.push("    syscall".into());
 
     let file_contents: String = instructions.join("\n");

@@ -67,26 +67,44 @@ pub fn simulate(tokens: &Vec<(Token, TokenPos)>) -> Result<(), Error> {
             Token::Else(end_ip) => { 
                 ip = *end_ip;
             },
+            Token::While => { },
+            Token::Do(end_ip) => { 
+                let a = stack.pop().expect("Do-while loop must have value on the stack for the condition.");
+                if a == 0 {
+                    ip = *end_ip;
+                }
+            },
             Token::End(next_ip) => {
                 ip = *next_ip;
             },
             Token::Eq => {
-                todo!()
+                let a = stack.pop().expect("No element on stack to compare.");
+                let b = stack.pop().expect("No element on stack to compare.");
+                stack.push((a == b) as usize);
             },
             Token::GT => {
-                todo!()
+                let a = stack.pop().expect("No element on stack to compare.");
+                let b = stack.pop().expect("No element on stack to compare.");
+                stack.push((b > a) as usize);
             },
             Token::LT => {
-                todo!()
+                let a = stack.pop().expect("No element on stack to compare.");
+                let b = stack.pop().expect("No element on stack to compare.");
+                stack.push((b < a) as usize);
             },
             Token::And => {
-                todo!()
+                let a = stack.pop().expect("No element on stack to compare.");
+                let b = stack.pop().expect("No element on stack to compare.");
+                stack.push((a > 0 && b > 0) as usize);
             },
             Token::Not => {
-                todo!()
+                let a = stack.pop().expect("No element on stack to compare.");
+                stack.push((a == 0) as usize);
             },
             Token::Or => {
-                todo!()
+                let a = stack.pop().expect("No element on stack to compare.");
+                let b = stack.pop().expect("No element on stack to compare.");
+                stack.push((a > 0 || b > 0) as usize);
             },
         }
 
