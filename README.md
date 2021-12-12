@@ -10,7 +10,7 @@ experiment in how compilers work, and how easy (or difficult) it is to write one
 - [x] Compiled and Interpreted
 - [ ] "Infinite" 2d Grid of Byte-Sized Cells
 - [x] [Turing Completeness](https://en.wikipedia.org/wiki/Turing_completeness)
-    - See the [Rule 110 Example](./examples/rule-11.lat)
+    - See the [Rule 110 Example](./examples/rule-110.lat)
 - [ ] [Self-hosting](https://en.wikipedia.org/wiki/Self-hosting_(compilers))
 - [ ] Cross-platform (Compiled)
 
