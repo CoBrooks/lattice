@@ -9,7 +9,8 @@ experiment in how compilers work, and how easy (or difficult) it is to write one
 
 - [x] Compiled and Interpreted
 - [ ] "Infinite" 2d Grid of Byte-Sized Cells
-- [ ] [Turing Completeness](https://en.wikipedia.org/wiki/Turing_completeness)
+- [x] [Turing Completeness](https://en.wikipedia.org/wiki/Turing_completeness)
+    - See the [Rule 110 Example](./examples/rule-11.lat)
 - [ ] [Self-hosting](https://en.wikipedia.org/wiki/Self-hosting_(compilers))
 - [ ] Cross-platform (Compiled)
 
@@ -25,42 +26,7 @@ $ ./target/release/lattice <sim | com> [FILE.lat]
 Note: Lattice currently only compiles to a x86_64 ELF binary, 
 and thus can only be run on Linux (for now).
 
-### Operators
-
-All examples print `4` to `stdout`.
-
-- print: prints an unsigned integer
-```
-4 print
-```
-
-- add, subtract, multiply, and divide
-```
-2  2 + print 
-8  4 - print
-2  2 * print
-16 4 / print
-```
-
-- dup: duplicates the top element of the stack
-```
-2 dup + print
-```
-
-- drop: drops the top element of the stack
-```
-4 100 drop print
-```
-
-- swap: swaps the top two elements of the stack
-```
-100 4 swap print
-```
-
-- over: duplicates the second element on the stack and pushes it
-```
-4 100 over print
-```
+See the [tests](./tests/) and [examples](./examples/) for example syntax and logic.
 
 ## TODO:
 
