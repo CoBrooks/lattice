@@ -25,6 +25,7 @@ pub fn compile(tokens: &Vec<(Token, TokenPos)>, input_filename: &str, run_on_suc
     instructions.push("extern pop_element".into());
     instructions.push("extern init_table".into());
     instructions.push("extern free_table".into());
+    instructions.push("extern write_cells".into());
     
     // Function for printing (32-bit) numbers
     instructions.push("print:".into());
@@ -105,6 +106,12 @@ pub fn compile(tokens: &Vec<(Token, TokenPos)>, input_filename: &str, run_on_suc
             Token::Print => {
                 instructions.push("    pop    rdi".into());
                 instructions.push("    call   print".into());
+            },
+            Token::Write => {
+                instructions.push("    mov    rdi, mem_table".into());
+                instructions.push("    mov    rsi, [mem_loc]".into());
+                instructions.push("    pop    rdx".into());
+                instructions.push("    call   write_cells".into());
             },
             Token::Dup => {
                 instructions.push("    pop    rax".into());

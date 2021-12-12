@@ -53,6 +53,7 @@ pub enum Token {
 
     // Stdout interaction
     Print,
+    Write,
     
     // Stack operations
     Dup,
@@ -95,6 +96,7 @@ impl Token {
             Token::OpMul => "; -- mul --",
             Token::OpDiv => "; -- div --",
             Token::Print => "; -- print --",
+            Token::Write => "; -- write --",
             Token::Dup => "; -- dup --",
             Token::Drop => "; -- drop --",
             Token::Swap => "; -- swap --",
@@ -222,6 +224,7 @@ pub fn lex_lines(lines: Vec<String>) -> Result<Vec<(Token, TokenPos)>, Error> {
                 "not" => Token::Not,
                 "or" => Token::Or,
                 "print" => Token::Print,
+                "write" => Token::Write,
                 "dup" => Token::Dup,
                 "drop" => Token::Drop,
                 "swap" => Token::Swap,
@@ -242,6 +245,9 @@ pub fn lex_lines(lines: Vec<String>) -> Result<Vec<(Token, TokenPos)>, Error> {
                 },
                 "else" => {
                     let t = Token::Else(0);
+                    if let (Token::If(_), _) = terminated_blocks.last().unwrap_or(&(Token::Not, TokenPos::default())) {
+                        terminated_blocks.pop();
+                    }
                     blocks.push((t, pos));
                     terminated_blocks.push((t, pos));
                     t

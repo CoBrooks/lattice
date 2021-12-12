@@ -1,0 +1,52 @@
+// https://en.wikipedia.org/wiki/Rule_110
+
+// Initial state (0 0 0 0 0 0 0 0 0 1)
+//                ^ current mem_loc
+9 r 1 . 9 l
+10 write
+
+// for each line...
+0 while dup 10 < do 
+    1 d // next line
+
+    // for each cell
+    0 while dup 10 < do
+        1 u   // previous cycle
+        1 r ? // push right neighbor
+        1 l ? // push previous iteration of current cell 
+        2 * + // multiply it by two and add to right neighbor
+        over 0 = if // if on left border
+            0 // push zero
+        else 
+            1 l ? // push left neightbor
+        end
+        4 * + // multiply it by four and add to other cells
+
+        // back to current cell
+        over 0 = if
+            1 d 
+        else
+            1 d 1 r
+        end
+
+        // Rule 110
+        dup 1 =     // if the sum of previous neighbors equals one...
+        over 2 = or // or two...
+        over 3 = or // or three...
+        over 5 = or // or five...
+        swap 6 = or // or six
+        if 
+            1 . // store '1' in the current cell
+        else
+            0 . // store '0'
+        end
+        1 r
+
+        1 +
+    end drop
+
+    10 l      // return mem_pointer to start of line (\r)
+    10 write  // write current line
+
+    1 + 
+end drop

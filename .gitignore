@@ -3,3 +3,8 @@ Cargo.lock
 
 /tests/*
 !/tests/*.lat
+
+/examples/*
+!/examples/*.lat
+
+mem.o

@@ -40,6 +40,15 @@ pub fn simulate(tokens: &Vec<(Token, TokenPos)>) -> Result<(), Error> {
                 let a = stack.pop().expect("Not enough elements on the stack to print.");
                 println!("{}", a);
             },
+            Token::Write => {
+                let a = stack.pop().expect("Need length to write.");
+                let (_, _, mut addr) = mem_addr;
+                for _ in 0..a {
+                    print!("{} ", mem.get(&addr).unwrap_or(&0));
+                    addr += 1;
+                }
+                println!();
+            },
             Token::Dup => {
                 let a = stack.pop().expect("No element to duplicate.");
                 stack.push(a);
