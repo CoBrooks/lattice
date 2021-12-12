@@ -1,6 +1,6 @@
 # Lattice
 
-A stack-based programming language with an "infinite" grid of cells as its memory structure written
+A stack-based programming language with a [very large](# "2^32 by 2^32 cells") grid of cells as its memory structure written
 in Rust. **Heavily** inspired by [Porth](https://gitlab.com/tsoding/porth). This is not meant to be a 
 usable programming language (yet), so features are subject to change. Lattice is mainly a personal
 experiment in how compilers work, and how easy (or difficult) it is to write one in Rust.
@@ -65,10 +65,10 @@ All examples print `4` to `stdout`.
 ## TODO:
 
 - [x] Conditions and Loops
-- [ ] Implement memory structure
-    - [ ] 2d grid
-    - [ ] Traversal of the grid (steps and jumps)
-    - [ ] Storing values within the grid
-    - [ ] Some form of pointers
+- [x] Implement memory structure
+    - [x] 2d grid
+    - [x] Traversal of the grid (steps and jumps)
+    - [x] Storing values within the grid
+    - [x] Some form of pointers
 - [ ] Directional arrays (C-style arrays; pointer to the start + a direction, ends with a null byte)
 

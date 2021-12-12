@@ -1,8 +1,11 @@
+use std::collections::BTreeMap;
+
 use super::{ Error, Token, TokenPos };
 
 pub fn simulate(tokens: &Vec<(Token, TokenPos)>) -> Result<(), Error> {
-    // let mem_addr: (usize, usize) = (0, 0);
-    // let mem: HashMap<(usize, usize), u8> = HashMap::new();
+    let mut mem_addr: (u32, u32, u64) = (0, 0, 0);
+    let mut mem: BTreeMap<u64, usize> = BTreeMap::new();
+
     let mut stack: Vec<usize> = Vec::new();
     let mut ip: usize = 0;
 
@@ -105,6 +108,52 @@ pub fn simulate(tokens: &Vec<(Token, TokenPos)>) -> Result<(), Error> {
                 let a = stack.pop().expect("No element on stack to compare.");
                 let b = stack.pop().expect("No element on stack to compare.");
                 stack.push((a > 0 || b > 0) as usize);
+            },
+            Token::Up => {
+                let a = stack.pop().expect("Up requires a magnitude to traverse the grid.");
+                let (x, y, ptr) = mem_addr;
+                mem_addr = (x, y - a as u32, ptr - (a as u64 * u32::MAX as u64));
+            },
+            Token::Down => {
+                let a = stack.pop().expect("Down requires a magnitude to traverse the grid.");
+                let (x, y, ptr) = mem_addr;
+                mem_addr = (x, y + a as u32, ptr + (a as u64 * u32::MAX as u64));
+            },
+            Token::Left => {
+                let a = stack.pop().expect("Left requires a magnitude to traverse the grid.");
+                let (x, y, ptr) = mem_addr;
+                mem_addr = (x - a as u32, y, ptr - a as u64);
+            },
+            Token::Right => {
+                let a = stack.pop().expect("Right requires a magnitude to traverse the grid.");
+                let (x, y, ptr) = mem_addr;
+                mem_addr = (x + a as u32, y, ptr + a as u64);
+            },
+            Token::Loc => {
+                let (_, _, ptr) = mem_addr;
+                stack.push(ptr as usize);
+            },
+            Token::Store => {
+                let a = stack.pop().expect("There must be a value on the stack to store.");
+                let (_, _, ptr) = mem_addr;
+                mem.insert(ptr, a);
+            },
+            Token::Load => {
+                let (_, _, ptr) = mem_addr;
+                if let Some(a) = mem.get_mut(&ptr) {
+                    stack.push(a.clone());
+                    *a = 0;
+                } else {
+                    stack.push(0);
+                }
+            },
+            Token::Copy => {
+                let (_, _, ptr) = mem_addr;
+                if let Some(a) = mem.get(&ptr) {
+                    stack.push(*a);
+                } else {
+                    stack.push(0);
+                }
             },
         }
 

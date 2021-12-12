@@ -1,0 +1,10 @@
+loc print     // 0
+1 r loc print // 1
+1 l loc print // 0
+1 d loc print // 4294967296
+1 u loc print // 0
+
+1 .         // stores 1 @ 0
+1 r 2 .     // stores 2 @ 1
+1 l , print // 1
+1 r , print // 2

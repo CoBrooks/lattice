@@ -12,8 +12,20 @@ pub fn compile(tokens: &Vec<(Token, TokenPos)>, input_filename: &str, run_on_suc
 
     let mut block_is_dowhile: Vec<bool> = Vec::new();
 
-    instructions.push("segment .text".into());
+    instructions.push("section .bss".into());
+    // Allocate memory table (array of 32 pointers)
+    instructions.push("    mem_table resb 32".into());
+    instructions.push("    mem_loc   resq 1".into());
 
+    instructions.push("section .text".into());
+
+    // Import memory functions 
+    instructions.push("extern insert_val".into());
+    instructions.push("extern get_val".into());
+    instructions.push("extern pop_element".into());
+    instructions.push("extern init_table".into());
+    instructions.push("extern free_table".into());
+    
     // Function for printing (32-bit) numbers
     instructions.push("print:".into());
     instructions.push("    mov     r9, -3689348814741910323".into());
@@ -51,6 +63,11 @@ pub fn compile(tokens: &Vec<(Token, TokenPos)>, input_filename: &str, run_on_suc
 
     instructions.push("global _start".into());
     instructions.push("_start:".into());
+
+    // Initialize mem_table
+    instructions.push("    mov    rdi, mem_table".into());
+    instructions.push("    call   init_table".into());
+
     for (token, _) in tokens {
         instructions.push(token.to_asm_comment());
 
@@ -73,7 +90,7 @@ pub fn compile(tokens: &Vec<(Token, TokenPos)>, input_filename: &str, run_on_suc
             Token::OpMul => {
                 instructions.push("    pop    rax".into());
                 instructions.push("    pop    rcx".into());
-                instructions.push("    imul   rcx".into());
+                instructions.push("    mul    rcx".into());
                 instructions.push("    push   rax".into());
             },
             Token::OpDiv => {
@@ -188,10 +205,56 @@ pub fn compile(tokens: &Vec<(Token, TokenPos)>, input_filename: &str, run_on_suc
                 instructions.push("    cmovne rax, rdx".into());
                 instructions.push("    push   rax".into());
             },
+            Token::Up => {
+                instructions.push("    pop    rax".into());
+                instructions.push("    mov    rcx, 4294967296".into());
+                instructions.push("    mul    rcx".into());
+                instructions.push("    sub    [mem_loc], rax".into());
+            },
+            Token::Down => {
+                instructions.push("    pop    rax".into());
+                instructions.push("    mov    rcx, 4294967296".into());
+                instructions.push("    mul    rcx".into());
+                instructions.push("    add    [mem_loc], rax".into());
+            },
+            Token::Left => {
+                instructions.push("    pop    rax".into());
+                instructions.push("    sub    [mem_loc], rax".into());
+            },
+            Token::Right => {
+                instructions.push("    pop    rax".into());
+                instructions.push("    add    [mem_loc], rax".into());
+            },
+            Token::Loc => {
+                instructions.push("    mov    rax, [mem_loc]".into());
+                instructions.push("    push   rax".into());
+            },
+            Token::Store => {
+                instructions.push("    mov    rdi, mem_table".into());
+                instructions.push("    mov    rsi, [mem_loc]".into());
+                instructions.push("    pop    rdx".into());
+                instructions.push("    call   insert_val".into());
+            },
+            Token::Load => {
+                instructions.push("    mov    rdi, mem_table".into());
+                instructions.push("    mov    rsi, [mem_loc]".into());
+                instructions.push("    xor    rax, rax".into());
+                instructions.push("    call   pop_element".into());
+                instructions.push("    push   rax".into());
+            },
+            Token::Copy => {
+                instructions.push("    mov    rdi, mem_table".into());
+                instructions.push("    mov    rsi, [mem_loc]".into());
+                instructions.push("    xor    rax, rax".into());
+                instructions.push("    call   get_val".into());
+                instructions.push("    push   rax".into());
+            },
         }
     }
 
     instructions.push("; -- exit --".into());
+    instructions.push("    mov    rdi, mem_table".into());
+    instructions.push("    call   free_table".into());
     instructions.push("    mov    rax, 60".into());
     instructions.push("    pop    rdi".into()); // return code = top element on stack
     instructions.push("    syscall".into());
@@ -204,26 +267,35 @@ pub fn compile(tokens: &Vec<(Token, TokenPos)>, input_filename: &str, run_on_suc
         |err| Error { msg: err.to_string(), pos: TokenPos::default() }
     ).expect("Failed to write to file.");
 
+    // Compile asm
     Command::new("nasm")
         .args([
               "-felf64", 
               output_base.with_extension("asm").to_str().unwrap()
-        ])
-        .output().and_then(|_| {
-            Command::new("ld")
-                .args([
-                      "-o", 
-                      output_base.with_extension("").to_str().unwrap(),
-                      output_base.with_extension("o").to_str().unwrap()
-                ])
-                .output()
-        }).and_then(|_| {
-            if run_on_success {
-                Command::new(output_base.with_extension("").to_str().unwrap())
-                    .spawn().unwrap();
-            }
-            Ok(())
-        }).expect("Failed to compile program.");
+        ]).output().expect("Failed to compile assembly.");
+
+    // Compile c libs
+    Command::new("gcc")
+        .args([
+              "-c", 
+              "-o",
+              "mem.o",
+              "./src/com/libs/mem.c",
+              "-static",
+              "-static-libgcc",
+        ]).output().expect("Failed to compile c libs.");
+
+    // Link libs to asm
+    Command::new("ld")
+        .args([
+              "-dynamic-linker", 
+              "/lib64/ld-linux-x86-64.so.2",
+              "-o",
+              output_base.with_extension("").to_str().unwrap(),
+              "-lc",
+              output_base.with_extension("o").to_str().unwrap(),
+              "mem.o"
+        ]).output().expect("Failed to link.");
 
     Ok(())
 }

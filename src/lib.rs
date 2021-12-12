@@ -74,6 +74,16 @@ pub enum Token {
     And,
     Not,
     Or,
+
+    // Memory interaction
+    Up,
+    Down,
+    Left,
+    Right,
+    Loc,
+    Store,
+    Load,
+    Copy,
 }
 
 impl Token {
@@ -100,6 +110,14 @@ impl Token {
             Token::And => "; -- and --",
             Token::Not => "; -- not --",
             Token::Or => "; -- or --",
+            Token::Up => "; -- up --",
+            Token::Down => "; -- down --",
+            Token::Left => "; -- left --",
+            Token::Right => "; -- right --",
+            Token::Loc => "; -- loc --",
+            Token::Store => "; -- store --",
+            Token::Load => "; -- load --",
+            Token::Copy => "; -- copy --",
         }.into()
     }
 }
@@ -208,6 +226,14 @@ pub fn lex_lines(lines: Vec<String>) -> Result<Vec<(Token, TokenPos)>, Error> {
                 "drop" => Token::Drop,
                 "swap" => Token::Swap,
                 "over" => Token::Over,
+                "u" => Token::Up,
+                "d" => Token::Down,
+                "l" => Token::Left,
+                "r" => Token::Right,
+                "loc" => Token::Loc,
+                "." => Token::Store,
+                "," => Token::Load,
+                "?" => Token::Copy,
                 "if" => { 
                     let t = Token::If(0);
                     blocks.push((t, pos));
