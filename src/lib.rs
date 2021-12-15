@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 pub mod com;
 pub mod sim;
 
@@ -27,11 +29,40 @@ pub fn load_file(filepath: &str) -> Result<Vec<String>, Error> {
     use std::fs;
 
     if let Ok(file) = fs::read_to_string(filepath) {
-        Ok(file.lines()
+        let mut lines: Vec<String> = file.lines()
            .map(|l| 
                 l.split("//").find(|_| true).unwrap().to_string()
-            ).collect()
-        )
+            ).collect();
+
+        let mut const_dict: HashMap<String, usize> = HashMap::new();
+        let const_declarations: Vec<String> = lines.iter().filter(|l| l.starts_with("#const")).cloned().collect();
+        lines.retain(|l| !l.starts_with("#const"));
+
+        if !const_declarations.is_empty() {
+            for decl in const_declarations {
+                if let [_, name, val] = decl.split(' ').collect::<Vec<&str>>().as_slice() {
+                    const_dict.insert(name.to_string(), val.parse().expect("Unable to parse constant value."));
+                } else {
+                    return Err(Error { 
+                        msg: format!("Unable to parse const declaration: '{}'", decl), 
+                        pos: TokenPos::default() 
+                    });
+                }
+            }
+
+            for line in lines.iter_mut() {
+                let line_clone = line.clone();
+                let words: Vec<&str> = line_clone.split(' ').collect();
+
+                for word in words {
+                    if const_dict.contains_key(word.trim()) {
+                        *line = line.replace(word, &const_dict.get(word.trim()).unwrap().to_string());
+                    }
+                }
+            }
+        }
+
+        Ok(lines)
     } else {
         Err(Error { 
             msg: format!("Unable to open file: {}", filepath), 

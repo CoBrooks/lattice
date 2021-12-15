@@ -8,56 +8,76 @@ struct HashElement {
     uint64_t loc;
     uint32_t val;
     struct HashElement *next;
+    char initialized;
+    char _padding[3];
 };
 
+uint32_t get_bucket(uint64_t loc) {
+    return loc % BUCKETS;
+}
+
 struct HashElement *insert_val(struct HashElement *table_ptr[], uint64_t loc, uint32_t val) {
-    uint32_t bucket = loc / (4294967295 / BUCKETS);
+    uint32_t bucket = get_bucket(loc);
+
+    struct HashElement *current = table_ptr[bucket];
+    struct HashElement *next;
+
+    if (current) {
+        next = current->next;
+    } else {
+        current = (struct HashElement *) malloc(sizeof(struct HashElement));
+        current->loc = loc;
+        current->val = val;
+        current->initialized = 0x1;
+        
+        current->next = (struct HashElement *) malloc(sizeof(struct HashElement));
+        current->next->initialized = 0x0;
+        
+        table_ptr[bucket] = current;
+
+        return current;
+    }
 
     size_t i = 0;
-    struct HashElement *prev = 0x0;
-    struct HashElement *current = table_ptr[bucket];
+    while (next) {
+        current = next;
+        next = current->next;
 
-    while (current) {
-        prev = current;
-        current = current->next;
         i++;
     }
+    
+    current->loc = loc;
+    current->val = val;
+    current->initialized = 0x1;
+    
+    current->next = (struct HashElement *) malloc(sizeof(struct HashElement));
+    current->next->initialized = 0x0;
 
-    struct HashElement *new;
-    new = (struct HashElement *) malloc(sizeof(struct HashElement)); 
-    new->loc = loc;
-    new->val = val;
-    new->next = NULL;
-
-    if (i == 0) {
-        table_ptr[bucket] = new;
-    }
-
-    if (prev) {
-        prev->next = new;
-    }
-
-    return new; 
+    return next;
 }
 
 uint32_t get_val(struct HashElement *table_ptr[], uint64_t loc) {
-    uint32_t bucket = loc / (4294967295 / BUCKETS);
-    
-    struct HashElement *current = table_ptr[bucket];
-    while (current && current->loc != loc) {
-        current = current->next;
-    }
+    uint32_t bucket = get_bucket(loc);
 
+    struct HashElement *current = table_ptr[bucket];
+    while (current && current->initialized == 0x1) {
+        if (current->loc == loc) {
+            return current->val;
+        } else {
+            current = current->next;
+        }
+    }
+    
     uint32_t val = 0;
     if (current && current->val) {
-        val =  current->val;
+        val = current->val;
     }
 
     return val;
 }
 
 uint32_t pop_element(struct HashElement *table_ptr[], uint64_t loc) {
-    uint32_t bucket = loc / (4294967295 / BUCKETS);
+    uint32_t bucket = get_bucket(loc);
 
     struct HashElement *prev = 0x0;
     struct HashElement *current = table_ptr[bucket];
@@ -77,7 +97,7 @@ uint32_t pop_element(struct HashElement *table_ptr[], uint64_t loc) {
 }
 
 int ensure_cells_right(struct HashElement *table_ptr[], uint64_t loc, size_t length) {
-    uint32_t bucket = loc / (4294967295 / BUCKETS);
+    uint32_t bucket = get_bucket(loc);
 
     for (int i = 0; i < length; i++) {
         if (get_val(table_ptr, loc + i) == 0) {
@@ -87,7 +107,7 @@ int ensure_cells_right(struct HashElement *table_ptr[], uint64_t loc, size_t len
 }
 
 int write_cells(struct HashElement *table_ptr[], uint64_t loc, size_t length) {
-    ensure_cells_right(table_ptr, loc, length);
+    // ensure_cells_right(table_ptr, loc, length);
 
     for (int i = 0; i < length; i++) {
         printf("%d ", get_val(table_ptr, loc + i));
@@ -97,8 +117,8 @@ int write_cells(struct HashElement *table_ptr[], uint64_t loc, size_t length) {
 }
 
 int init_table(struct HashElement *table_ptr[]) {
-    for (int b = 0; b < BUCKETS; b++) {
-        table_ptr[b] = 0x0;
+    for (int i = 0; i < BUCKETS; i++) {
+        table_ptr[i] = 0x0;
     }
 }
 

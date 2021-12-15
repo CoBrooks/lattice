@@ -4,7 +4,7 @@ use std::process::Command;
 
 use super::{ Error, Token, TokenPos };
 
-pub fn compile(tokens: &Vec<(Token, TokenPos)>, input_filename: &str, run_on_success: bool) -> Result<(), Error> {
+pub fn compile(tokens: &Vec<(Token, TokenPos)>, input_filename: &str) -> Result<(), Error> {
     let mut instructions: Vec<String> = Vec::new();
     
     let mut block_num: usize = 0;
@@ -14,7 +14,7 @@ pub fn compile(tokens: &Vec<(Token, TokenPos)>, input_filename: &str, run_on_suc
 
     instructions.push("section .bss".into());
     // Allocate memory table (array of 32 pointers)
-    instructions.push("    mem_table resb 32".into());
+    instructions.push("    mem_table resq 32".into());
     instructions.push("    mem_loc   resq 1".into());
 
     instructions.push("section .text".into());

@@ -1,16 +1,17 @@
 // https://en.wikipedia.org/wiki/Rule_110
+#const NUM 16
 
 // Initial state (0 0 0 0 0 0 0 0 0 1)
 //                ^ current mem_loc
-9 r 1 . 9 l
-10 write
+NUM 1 - r 1 . NUM 1 - l
+NUM write
 
 // for each line...
-0 while dup 10 < do 
+0 while dup NUM < do 
     1 d // next line
 
     // for each cell
-    0 while dup 10 < do
+    0 while dup NUM < do
         1 u   // previous cycle
         1 r ? // push right neighbor
         1 l ? // push previous iteration of current cell 
@@ -45,8 +46,8 @@
         1 +
     end drop
 
-    10 l      // return mem_pointer to start of line (\r)
-    10 write  // write current line
+    NUM l      // return mem_pointer to start of line (\r)
+    NUM write  // write current line
 
     1 + 
 end drop

@@ -29,7 +29,7 @@ fn main() -> Result<(), Error> {
         let lines = load_file(file)?;
         let tokens = lex_lines(lines)?;
         
-        com::compile(&tokens, &file, matches.is_present("run"))?;
+        com::compile(&tokens, &file)?;
     } else if let Some(matches) = matches.subcommand_matches("sim") {
         let file = matches.value_of("FILE").unwrap();
         let lines = load_file(file)?;
