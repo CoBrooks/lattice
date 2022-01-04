@@ -14,8 +14,8 @@ struct CompilerVars {
 }
 
 pub fn compile(tokens: &LexerOutput, input_filename: &str) -> Result<(), Error> {
-    let fn_tokens = &tokens.fn_tokens;
-    let tokens = &tokens.tokens;
+    // struct deconstruction
+    let LexerOutput { fn_tokens, tokens } = tokens;
 
     let mut instructions: Vec<String> = Vec::new();
 
@@ -80,6 +80,7 @@ pub fn compile(tokens: &LexerOutput, input_filename: &str) -> Result<(), Error> 
     instructions.push("    add     rsp, 40".into());
     instructions.push("    ret".into());
 
+    // Write function instructions
     for (token, _) in fn_tokens {
         // last instruction in function
         if let Token::End(-1) = token {
@@ -106,6 +107,7 @@ pub fn compile(tokens: &LexerOutput, input_filename: &str) -> Result<(), Error> 
         }
     }
 
+    // Executable entry point
     instructions.push("global _start".into());
     instructions.push("_start:".into());
 
@@ -115,8 +117,8 @@ pub fn compile(tokens: &LexerOutput, input_filename: &str) -> Result<(), Error> 
     // Initialize fn_stack
     instructions.push("    mov    QWORD [fn_index], 0".into());
 
-    for (token, pos) in tokens {
-        println!("{:?}", pos);
+    // Write main function instructions
+    for (token, _) in tokens {
         push_instructions_from_token(token, &mut instructions, &mut compiler_vars);
     }
 
@@ -142,7 +144,7 @@ pub fn compile(tokens: &LexerOutput, input_filename: &str) -> Result<(), Error> 
               output_base.with_extension("asm").to_str().unwrap()
         ]).output().expect("Failed to compile assembly.");
 
-    // Compile c libs
+    // Compile c lib(s)
     Command::new("gcc")
         .args([
               "-c",

@@ -14,8 +14,6 @@ pub fn simulate(tokens: &Vec<(Token, TokenPos)>) -> Result<(), Error> {
     while ip < tokens.len() {
         let (token, _) = &tokens[ip];
 
-        // println!("{:?} @ {} | STACK: {:?}", token, ip, stack);
-
         match token {
             Token::Num(num) => {
                 stack.push(num.clone());
@@ -189,8 +187,6 @@ pub fn simulate(tokens: &Vec<(Token, TokenPos)>) -> Result<(), Error> {
                         None
                     }
                 }).expect(&format!("No function with name '{:?}'", String::from_utf8_lossy(fn_name)));
-
-                // println!("{:?} @ {}", String::from_utf8_lossy(fn_name), function_ip);
 
                 ip = function_ip - 1;
             }

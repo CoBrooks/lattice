@@ -3,16 +3,6 @@ use std::collections::{ HashMap, HashSet };
 pub mod com;
 pub mod sim;
 
-pub fn uncons<T>(arr: &[T]) -> (&T, &[T]){
-    if arr.len() > 1 {
-        (&arr[0], &arr[1..])
-    } else if arr.len() == 1 {
-        (&arr[0], &[])
-    } else {
-        panic!("No elements in array to uncons.")
-    }
-}
-
 fn byte_slice_to_fixed_len<const N: usize>(s: &[u8], fill: u8) -> [u8; N] {
     assert!(s.len() <= N);
 
@@ -167,7 +157,7 @@ impl Token {
             Token::Store => "; -- store --",
             Token::Load => "; -- load --",
             Token::Copy => "; -- copy --",
-            Token::Fn(_, _) => "; -- fn --",
+            Token::Fn(..) => "; -- fn --",
             Token::FnCall(_) => "; -- fn call --",
         }.into()
     }
@@ -331,7 +321,7 @@ pub fn lex_lines(lines: Vec<String>) -> Result<LexerOutput, Error> {
                         Token::End(ip as isize)
                     } else if let Token::While = block_type { 
                         Token::End(block_start.ip as isize)
-                    } else if let Token::Fn(_, _) = block_type { 
+                    } else if let Token::Fn(..) = block_type { 
                         inside_fn = false;
                         Token::End(-1)
                     } else {
@@ -407,11 +397,7 @@ pub fn lex_lines(lines: Vec<String>) -> Result<LexerOutput, Error> {
 
             tokens[block_start.ip] = (Token::Do(end_ip), ip);
         } else if let (Token::While, _) = tokens[block_start.ip] { 
-            
-        } else if let (Token::Fn(fn_name, _), ip) = (b, block_start) {
-            // let end_ip = get_block_end(fn_tokens.as_slice(), *block_start)?;
-
-            // tokens[block_start.ip] = (Token::Fn(*fn_name, end_ip), *ip);
+        } else if let (Token::Fn(..), _) = (b, block_start) {
         } else {
             println!("BLOCKS: {:?} \n B {:?} \n BLOCK START {:?}", &blocks, b, tokens[block_start.ip]);
             todo!("Implement missing block logic.")
