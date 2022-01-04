@@ -4,33 +4,33 @@
 
 #define BUCKETS 32
 
-struct HashElement {
+typedef struct HashElement {
     uint64_t loc;
     uint32_t val;
     struct HashElement *next;
     char initialized;
     char _padding[3];
-};
+} HashElement;
 
 uint32_t get_bucket(uint64_t loc) {
     return loc % BUCKETS;
 }
 
-struct HashElement *insert_val(struct HashElement *table_ptr[], uint64_t loc, uint32_t val) {
+struct HashElement *insert_val(HashElement *table_ptr[], uint64_t loc, uint32_t val) {
     uint32_t bucket = get_bucket(loc);
 
-    struct HashElement *current = table_ptr[bucket];
-    struct HashElement *next;
+    HashElement *current = table_ptr[bucket];
+    HashElement *next;
 
     if (current) {
         next = current->next;
     } else {
-        current = (struct HashElement *) malloc(sizeof(struct HashElement));
+        current = (HashElement *) malloc(sizeof(HashElement));
         current->loc = loc;
         current->val = val;
         current->initialized = 0x1;
         
-        current->next = (struct HashElement *) malloc(sizeof(struct HashElement));
+        current->next = (HashElement *) malloc(sizeof(HashElement));
         current->next->initialized = 0x0;
         
         table_ptr[bucket] = current;
@@ -50,16 +50,16 @@ struct HashElement *insert_val(struct HashElement *table_ptr[], uint64_t loc, ui
     current->val = val;
     current->initialized = 0x1;
     
-    current->next = (struct HashElement *) malloc(sizeof(struct HashElement));
+    current->next = (HashElement *) malloc(sizeof(HashElement));
     current->next->initialized = 0x0;
 
     return next;
 }
 
-uint32_t get_val(struct HashElement *table_ptr[], uint64_t loc) {
+uint32_t get_val(HashElement *table_ptr[], uint64_t loc) {
     uint32_t bucket = get_bucket(loc);
 
-    struct HashElement *current = table_ptr[bucket];
+    HashElement *current = table_ptr[bucket];
     while (current && current->initialized == 0x1) {
         if (current->loc == loc) {
             return current->val;
@@ -76,27 +76,30 @@ uint32_t get_val(struct HashElement *table_ptr[], uint64_t loc) {
     return val;
 }
 
-uint32_t pop_element(struct HashElement *table_ptr[], uint64_t loc) {
+uint32_t pop_element(HashElement *table_ptr[], uint64_t loc) {
     uint32_t bucket = get_bucket(loc);
 
-    struct HashElement *prev = 0x0;
-    struct HashElement *current = table_ptr[bucket];
+    HashElement *prev = 0x0;
+    HashElement *current = table_ptr[bucket];
     while (current && current->loc != loc) {
         prev = current;
         current = current->next;
     }
 
     uint32_t val = current->val;
-    struct HashElement *next = current->next;
+    HashElement *next = current->next;
 
-    free(current);
-
-    prev->next = next;
-
+    if (!prev) {
+        table_ptr[bucket] = next;
+    } else {
+        prev->next = next;
+        free(current);
+    }
+    
     return val;
 }
 
-int ensure_cells_right(struct HashElement *table_ptr[], uint64_t loc, size_t length) {
+int ensure_cells_right(HashElement *table_ptr[], uint64_t loc, size_t length) {
     uint32_t bucket = get_bucket(loc);
 
     for (int i = 0; i < length; i++) {
@@ -106,7 +109,7 @@ int ensure_cells_right(struct HashElement *table_ptr[], uint64_t loc, size_t len
     }
 }
 
-int write_cells(struct HashElement *table_ptr[], uint64_t loc, size_t length) {
+int write_cells(HashElement *table_ptr[], uint64_t loc, size_t length) {
     // ensure_cells_right(table_ptr, loc, length);
 
     for (int i = 0; i < length; i++) {
@@ -116,20 +119,20 @@ int write_cells(struct HashElement *table_ptr[], uint64_t loc, size_t length) {
     printf("\n");
 }
 
-int init_table(struct HashElement *table_ptr[]) {
+int init_table(HashElement *table_ptr[]) {
     for (int i = 0; i < BUCKETS; i++) {
         table_ptr[i] = 0x0;
     }
 }
 
-int free_table(struct HashElement *table_ptr[]) {
+int free_table(HashElement *table_ptr[]) {
     for (int b = 0; b < BUCKETS; b++) {
-        struct HashElement *current = table_ptr[b];
+        HashElement *current = table_ptr[b];
         // Deferencing null structures will give a pointer to 0x1
         // No idea where a pointer to 0xa00000000 came from...
         // especially after `init_table`
         while (current > 0x1 && current != 0xa00000000) { 
-            struct HashElement *next = current->next;
+            HashElement *next = current->next;
             free(current);
             current = next;
         }

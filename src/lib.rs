@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{ HashMap, HashSet };
 
 pub mod com;
 pub mod sim;
@@ -11,6 +11,18 @@ pub fn uncons<T>(arr: &[T]) -> (&T, &[T]){
     } else {
         panic!("No elements in array to uncons.")
     }
+}
+
+fn byte_slice_to_fixed_len<const N: usize>(s: &[u8], fill: u8) -> [u8; N] {
+    assert!(s.len() <= N);
+
+    let mut a = [fill; N];
+
+    for (i, elem) in s.iter().enumerate() {
+        a[i] = elem.clone();
+    }
+
+    a
 }
 
 #[derive(Debug)]
@@ -97,7 +109,7 @@ pub enum Token {
     Else(usize),
     While,
     Do(usize),
-    End(usize),
+    End(isize),
 
     // Conditional operators
     Eq,
@@ -116,6 +128,10 @@ pub enum Token {
     Store,
     Load,
     Copy,
+
+    // Functions
+    Fn([u8; 256], usize),
+    FnCall([u8; 256]),
 }
 
 impl Token {
@@ -151,6 +167,8 @@ impl Token {
             Token::Store => "; -- store --",
             Token::Load => "; -- load --",
             Token::Copy => "; -- copy --",
+            Token::Fn(_, _) => "; -- fn --",
+            Token::FnCall(_) => "; -- fn call --",
         }.into()
     }
 }
@@ -216,15 +234,26 @@ pub fn get_if_next_ip(tokens: &[(Token, TokenPos)], if_start: TokenPos) -> Resul
     Err(Error { msg: "If statement is not terminated with the `end` keyword".into(), pos: if_start })
 }
 
-pub fn lex_lines(lines: Vec<String>) -> Result<Vec<(Token, TokenPos)>, Error> {
+pub struct LexerOutput {
+    pub tokens: Vec<(Token, TokenPos)>,
+    pub fn_tokens: Vec<(Token, TokenPos)>,
+}
+
+pub fn lex_lines(lines: Vec<String>) -> Result<LexerOutput, Error> {
     let mut tokens: Vec<(Token, TokenPos)> = Vec::new();
+    let mut fn_tokens: Vec<(Token, TokenPos)> = Vec::new();
     let mut ip: usize = 0;
 
     let mut blocks: Vec<(Token, TokenPos)> = Vec::new();
     let mut terminated_blocks: Vec<(Token, TokenPos)> = Vec::new();
 
+    let mut functions: HashSet<&[u8]> = HashSet::new();
+    let mut inside_fn: bool = false;
+
     for (row, line) in lines.iter().enumerate() {
         let ts: Vec<&str> = line.split_ascii_whitespace().collect();
+
+        let mut prev_fn = false;
 
         for (col, t) in ts.iter().cloned().enumerate() {
             let pos = TokenPos { 
@@ -297,13 +326,52 @@ pub fn lex_lines(lines: Vec<String>) -> Result<Vec<(Token, TokenPos)>, Error> {
                 "end" => {
                     let (block_type, block_start) = terminated_blocks.pop().unwrap();
                     if let Token::If(_) = block_type {
-                        Token::End(ip)
+                        Token::End(ip as isize)
                     } else if let Token::Else(_) = block_type { 
-                        Token::End(ip)
+                        Token::End(ip as isize)
                     } else if let Token::While = block_type { 
-                        Token::End(block_start.ip)
+                        Token::End(block_start.ip as isize)
+                    } else if let Token::Fn(_, _) = block_type { 
+                        inside_fn = false;
+                        Token::End(-1)
                     } else {
-                        Token::End(block_start.ip) 
+                        Token::End(block_start.ip as isize) 
+                    }
+                },
+                "fn" => {
+                    let t = Token::Fn([0; 256], 0);
+
+                    prev_fn = true;
+
+                    t
+                },
+                t if prev_fn => {
+                    let (_, pos) = tokens.pop().unwrap();
+                    let mut fn_name = [0; 256];
+                    let chars = t.as_bytes();
+
+                    assert!(chars.len() <= 256);
+
+                    for (i, c) in chars.into_iter().enumerate() {
+                        fn_name[i] = *c;
+                    }
+
+                    prev_fn = false;
+                    functions.insert(t.as_bytes());
+                    inside_fn = true;
+
+                    let t = Token::Fn(fn_name, 0);
+                    terminated_blocks.push((t, pos));
+
+                    ip -= 1;
+
+                    t
+                },
+                t if functions.contains(t.as_bytes()) => {
+                    if let Some(fn_name) = functions.get(t.as_bytes()) {
+                        Token::FnCall(byte_slice_to_fixed_len(fn_name, 0))
+                    } else {
+                        panic!("Function name not found")
                     }
                 },
                 _ => { 
@@ -314,34 +382,49 @@ pub fn lex_lines(lines: Vec<String>) -> Result<Vec<(Token, TokenPos)>, Error> {
                 },
             };
 
-            tokens.push((token, pos));
+            if inside_fn {
+                fn_tokens.push((token, pos));
+            } else if let Token::End(-1) = token {
+                fn_tokens.push((token, pos));
+            } else {
+                tokens.push((token, pos));
+            }
             ip += 1;
         }
     }
 
-    for (_, block_start) in blocks {
+    for (b, block_start) in &blocks {
         if let (Token::If(_), ip) = tokens[block_start.ip] {
-            let next = get_if_next_ip(tokens.as_slice(), block_start)?;
+            let next = get_if_next_ip(tokens.as_slice(), *block_start)?;
             
             tokens[block_start.ip] = (Token::If(next), ip);
         } else if let (Token::Else(_), ip) = tokens[block_start.ip] { 
-            let next = get_block_end(tokens.as_slice(), block_start)?;
+            let next = get_block_end(tokens.as_slice(), *block_start)?;
 
             tokens[block_start.ip] = (Token::Else(next), ip);
         } else if let (Token::Do(_), ip) = tokens[block_start.ip] {
-            let end_ip = get_block_end(tokens.as_slice(), block_start)?;
+            let end_ip = get_block_end(tokens.as_slice(), *block_start)?;
 
             tokens[block_start.ip] = (Token::Do(end_ip), ip);
         } else if let (Token::While, _) = tokens[block_start.ip] { 
             
+        } else if let (Token::Fn(fn_name, _), ip) = (b, block_start) {
+            // let end_ip = get_block_end(fn_tokens.as_slice(), *block_start)?;
+
+            // tokens[block_start.ip] = (Token::Fn(*fn_name, end_ip), *ip);
         } else {
+            println!("BLOCKS: {:?} \n B {:?} \n BLOCK START {:?}", &blocks, b, tokens[block_start.ip]);
             todo!("Implement missing block logic.")
         }
     }
-
+    
+    // #[cfg(debug_assertions)]
     // for (token, pos) in &tokens {
     //     println!("{:?}: {}", token, pos.ip);
     // }
 
-    Ok(tokens)
+    Ok(LexerOutput {
+        tokens,
+        fn_tokens
+    })
 }

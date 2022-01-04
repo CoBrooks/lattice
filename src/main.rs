@@ -35,7 +35,7 @@ fn main() -> Result<(), Error> {
         let lines = load_file(file)?;
         let tokens = lex_lines(lines)?;
         
-        sim::simulate(&tokens)?;
+        sim::simulate(&tokens.tokens)?;
     } else {
         unreachable!()
     }

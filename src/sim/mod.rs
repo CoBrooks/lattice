@@ -9,8 +9,12 @@ pub fn simulate(tokens: &Vec<(Token, TokenPos)>) -> Result<(), Error> {
     let mut stack: Vec<usize> = Vec::new();
     let mut ip: usize = 0;
 
+    let mut function_call_stack: Vec<usize> = Vec::new();
+
     while ip < tokens.len() {
         let (token, _) = &tokens[ip];
+
+        // println!("{:?} @ {} | STACK: {:?}", token, ip, stack);
 
         match token {
             Token::Num(num) => {
@@ -87,7 +91,12 @@ pub fn simulate(tokens: &Vec<(Token, TokenPos)>) -> Result<(), Error> {
                 }
             },
             Token::End(next_ip) => {
-                ip = *next_ip;
+                if *next_ip == -1 {
+                    let next_ip = function_call_stack.pop().unwrap();
+                    ip = next_ip;
+                } else {
+                    ip = *next_ip as usize;
+                }
             },
             Token::Eq => {
                 let a = stack.pop().expect("No element on stack to compare.");
@@ -164,6 +173,27 @@ pub fn simulate(tokens: &Vec<(Token, TokenPos)>) -> Result<(), Error> {
                     stack.push(0);
                 }
             },
+            Token::Fn(_, end_ip) => {
+                ip = *end_ip;
+            }
+            Token::FnCall(fn_name) => {
+                function_call_stack.push(ip);
+                let function_ip = tokens.iter().find_map(|(t, pos)| {
+                    if let Token::Fn(f, _) = t {
+                        if f == fn_name {
+                            Some(pos.ip)
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                }).expect(&format!("No function with name '{:?}'", String::from_utf8_lossy(fn_name)));
+
+                // println!("{:?} @ {}", String::from_utf8_lossy(fn_name), function_ip);
+
+                ip = function_ip - 1;
+            }
         }
 
         ip += 1;

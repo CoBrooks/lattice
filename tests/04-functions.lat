@@ -1,0 +1,10 @@
+fn foo 
+    1 + print
+end
+
+fn bar 
+    2 * foo
+end
+
+2 foo // prints 3
+3 bar // prints 7
